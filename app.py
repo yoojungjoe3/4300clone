@@ -17,10 +17,11 @@ def main():
     # Lists to hold extracted data from init.sql
     fandoms = []
     ships = []
+    abstract = []
     names = []
 
     # Regex to capture Name, Fandom, and Ship(s)
-    pattern = re.compile(r"VALUES\s*\(\s*'\"(.*?)\"',\s*'\"(.*?)\"',\s*'\"(.*?)\"',")
+    pattern = re.compile(r"VALUES\s*\(\s*'\"(.*?)\"',\s*'\"(.*?)\"',\s*'\"(.*?)\"',\s*'[^']*',\s*'\"[^']*\"',\s*'\"[^']*\"',\s*'\"(.*?)\"'\s*\)")
 
     # Read the init.sql file and populate the lists
     with open("init.sql", "r", encoding="utf-8") as file:
@@ -30,8 +31,11 @@ def main():
                 names.append(find.group(1))
                 fandom_clean = clean_text(find.group(2))
                 ship_clean = clean_text(find.group(3))
+                abstract_clean = clean_text(find.group(4))
                 fandoms.append(fandom_clean)
                 ships.append(ship_clean)
+                abstract.append(abstract_clean)
+                
 
     def vector_search(query, fandoms, ships, names):
         """
@@ -47,9 +51,11 @@ def main():
     # Create a list to store the similarity scores for the query words
     similarity_scores_fandoms = []
     similarity_scores_ships = []
+    similarity_scores_abstracts = []
 
     # Iterate through each word in the query and compare with fandoms and ships
     for word in query_words:
+        #fandom
         join_fandom_query = fandoms + [word]
         tfidf_matrix_fandoms = vectorizer.fit_transform(join_fandom_query)
         query_vector_fandoms = tfidf_matrix_fandoms[-1]
@@ -57,6 +63,7 @@ def main():
         similarities_fandoms = cosine_similarity(query_vector_fandoms, candidate_vectors_fandoms).flatten()
         similarity_scores_fandoms.append(similarities_fandoms)
 
+        #ship
         join_ship_query = ships + [word]
         tfidf_matrix_ships = vectorizer.fit_transform(join_ship_query)
         query_vector_ships = tfidf_matrix_ships[-1]
@@ -64,12 +71,22 @@ def main():
         similarities_ships = cosine_similarity(query_vector_ships, candidate_vectors_ships).flatten()
         similarity_scores_ships.append(similarities_ships)
 
+        #abstract
+        join_abstract_query = abstract + [word]
+        tfidf_matrix_abstracts = vectorizer.fit_transform(join_abstract_query)
+        query_vector_abstracts = tfidf_matrix_abstracts[-1]
+        candidate_vectors_abstracts = tfidf_matrix_abstracts[:-1]
+        similarities_abstracts = cosine_similarity(query_vector_abstracts, candidate_vectors_abstracts).flatten()
+        similarity_scores_abstracts.append(similarities_abstracts)
+
+
     # Combine the similarity scores for each query word (sum of all word similarities)
     combined_fandom_similarities = np.sum(np.array(similarity_scores_fandoms), axis=0)
     combined_ship_similarities = np.sum(np.array(similarity_scores_ships), axis=0)
+    combined_abstract_similarities = np.sum(np.array(similarity_scores_abstracts), axis=0)
 
     # Combine fandom and ship similarities
-    combined_similarities = combined_fandom_similarities + combined_ship_similarities
+    combined_similarities = combined_fandom_similarities + combined_ship_similarities + combined_abstract_similarities
     total_sim_dict = {i + 1: total for i, total in enumerate(combined_similarities)}
 
     # Sort keys (record indices) by similarity score (highest first)
