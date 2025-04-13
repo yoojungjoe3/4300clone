@@ -15,11 +15,14 @@ def main():
     query = input("Enter your search query: ")  # Asking the user for input
 
     # Lists to hold extracted data from init.sql
+
+    names = []
     fandoms = []
     ships = []
-    abstract = []
+    ratings = []
+    links = []
     reviews = []
-    names = []
+    abstracts = []
 
     # Regex to capture Name, Fandom, Review, Abstracts and Ship(s)
     pattern = re.compile(r"VALUES\s*\(\s*'\"(.*?)\"',\s*'\"(.*?)\"',\s*'\"(.*?)\"',\s*'[^']*',\s*'\"[^']*\"',\s*'\"(.*?)\"',\s*'\"(.*?)\"'\s*\)")
@@ -38,7 +41,7 @@ def main():
                 fandoms.append(fandom_clean)
                 ships.append(ship_clean)
                 reviews.append(review_clean)
-                abstract.append(abstract_clean)
+                abstracts.append(abstract_clean)
                 
 
     def vector_search(query, fandoms, ships, names):
@@ -77,7 +80,7 @@ def main():
         similarity_scores_ships.append(similarities_ships)
 
         #abstract
-        join_abstract_query = abstract + [word]
+        join_abstract_query = abstracts + [word]
         tfidf_matrix_abstracts = vectorizer.fit_transform(join_abstract_query)
         query_vector_abstracts = tfidf_matrix_abstracts[-1]
         candidate_vectors_abstracts = tfidf_matrix_abstracts[:-1]
